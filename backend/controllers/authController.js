@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const generateToken = require('../utils/generateToken');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -24,6 +25,8 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
+      generateToken(res, user._id);
+      
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -38,6 +41,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
@@ -49,6 +53,8 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      generateToken(res, user._id);
+
       res.json({
         _id: user._id,
         name: user.name,
