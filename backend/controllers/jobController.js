@@ -49,7 +49,28 @@ const createJob = async (req, res) => {
 // @access  Public
 const getJobs = async (req, res) => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const { title, location, jobType, skills } = req.query;
+    
+    let query = {};
+    
+    if (title) {
+      query.title = { $regex: title, $options: 'i' };
+    }
+    
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+    
+    if (jobType) {
+      query.jobType = jobType;
+    }
+    
+    if (skills) {
+      const skillsArray = skills.split(',').map(skill => skill.trim());
+      query.skillsRequired = { $in: skillsArray.map(s => new RegExp(s, 'i')) };
+    }
+
+    const jobs = await Job.find(query).sort({ createdAt: -1 });
     res.json(jobs);
   } catch (error) {
     res.status(500).json({ message: error.message });
