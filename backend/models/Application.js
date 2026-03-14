@@ -44,6 +44,16 @@ const applicationSchema = new mongoose.Schema(
   }
 );
 
+applicationSchema.pre('save', function (next) {
+  if (this.isModified('status')) {
+    this.statusHistory.push({
+      status: this.status,
+      updatedAt: Date.now(),
+    });
+  }
+  next();
+});
+
 const Application = mongoose.model('Application', applicationSchema);
 
 module.exports = Application;
