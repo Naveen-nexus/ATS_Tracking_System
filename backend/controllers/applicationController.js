@@ -49,7 +49,14 @@ const applyJob = async (req, res) => {
 const getCandidateApplications = async (req, res) => {
   try {
     const applications = await Application.find({ candidateId: req.user._id })
-      .populate('jobId', 'title companyName companyLogo location jobType salaryMin salaryMax')
+      .populate({
+        path: 'jobId',
+        select: 'title companyName companyLogo location jobType salaryMin salaryMax',
+        populate: {
+          path: 'postedBy',
+          select: 'name email',
+        }
+      })
       .sort({ createdAt: -1 });
 
     res.json(applications);
