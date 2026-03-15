@@ -50,7 +50,27 @@ const getSavedJobs = async (req, res) => {
   }
 };
 
+const unsaveJob = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const savedJob = await SavedJob.findOneAndDelete({
+      candidateId: req.user._id,
+      jobId,
+    });
+
+    if (savedJob) {
+      res.json({ message: 'Job removed from saved list' });
+    } else {
+      res.status(404).json({ message: 'Saved job not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   saveJob,
   getSavedJobs,
+  unsaveJob,
 };
