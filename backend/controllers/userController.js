@@ -38,6 +38,19 @@ const saveJob = async (req, res) => {
   }
 };
 
+const getSavedJobs = async (req, res) => {
+  try {
+    const savedJobs = await SavedJob.find({ candidateId: req.user._id })
+      .populate('jobId')
+      .sort({ createdAt: -1 });
+
+    res.json(savedJobs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   saveJob,
+  getSavedJobs,
 };
