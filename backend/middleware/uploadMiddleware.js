@@ -1,15 +1,8 @@
 const multer = require('multer');
 const path = require('path');
 
-// Set storage engine
-const storage = multer.diskStorage({
-  // Use memory storage or just regular uploads folder? 
-  // For Cloudinary, usually we can use memory storage OR disk storage and then upload.
-  // Using disk storage temporarily is simpler if we don't have a buffer stream uploader ready.
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  },
-});
+// Use memory storage for Cloudinary upload
+const storage = multer.memoryStorage();
 
 // Check file type
 function checkFileType(file, cb) {
