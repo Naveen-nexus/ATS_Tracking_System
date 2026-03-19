@@ -1,4 +1,6 @@
 const Job = require('../models/Job');
+const Resume = require('../models/Resume');
+const { calculateMatchScore } = require('../utils/matchScorer');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -104,8 +106,41 @@ const getJobById = async (req, res) => {
   }
 };
 
+// @desc    Get match score for a job
+// @route   GET /api/jobs/:id/match
+// @access  Private (Candidate only)
+const getJobMatch = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    const resume = await Resume.findOne({ candidateId: req.user.id });
+
+    if (!resume) {
+      return res.status(404).json({ message: 'Resume not found. Please upload a resume first.' });
+    }
+
+    const matchResult = calculateMatchScore(resume.skillsExtracted, job.skillsRequired);
+
+    res.json({
+      jobId: job._id,
+      matchScore: matchResult.score,
+      matchedSkills: matchResult.matchedSkills,
+      missingSkills: matchResult.missingSkills,
+    });
+  } catch (error) {
+    console.error('Match calculation error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   createJob,
   getJobs,
   getJobById,
+  getJobMatch,
 };
+
