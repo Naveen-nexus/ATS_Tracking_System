@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
 
@@ -54,6 +55,47 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-module.exports = {
-  getDashboardStats
+// @desc    Get job performance metrics (applications per job)
+// @route   GET /api/analytics/jobs
+// @access  Private (Recruiter only)
+const getJobPerformance = async (req, res) => {
+  try {
+    if (req.user.role !== 'recruiter') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const recruiterId = new mongoose.Types.ObjectId(req.user._id);
+
+    // Get all jobs with application count
+    const jobPerformance = await Job.aggregate([
+      { $match: { postedBy: recruiterId } },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: '_id',
+          foreignField: 'jobId',
+          as: 'applications'
+        }
+      },
+      {
+        $project: {
+          title: 1,
+          applicationCount: { $size: '$applications' },
+          createdAt: 1
+        }
+      },
+      { $sort: { applicationCount: -1 } } // Sort by most popular
+    ]);
+
+    res.json(jobPerformance);
+  } catch (error) {
+    console.error('Job Performance Analytics Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
+
+module.exports = {
+  getDashboardStats,
+  getJobPerformance
+};
+
