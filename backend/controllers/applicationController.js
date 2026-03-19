@@ -61,19 +61,6 @@ const applyJob = async (req, res) => {
 };
 
 
-    // Create application
-    const application = await Application.create({
-      candidateId,
-      jobId,
-      status: 'Applied',
-    });
-
-    res.status(201).json(application);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // @desc    Get candidate's applications
 // @route   GET /api/applications/mine
 // @access  Private (Candidate only)
