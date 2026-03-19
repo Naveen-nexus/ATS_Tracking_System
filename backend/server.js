@@ -8,6 +8,7 @@ const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const userRoutes = require('./routes/userRoutes');
 const resumeRoutes = require('./routes/resumeRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/resumes', resumeRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Base route
 app.get('/', (req, res) => {
