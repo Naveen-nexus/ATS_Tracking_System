@@ -1,5 +1,7 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const Resume = require('../models/Resume');
+const { calculateMatchScore } = require('../utils/matchScorer');
 
 // @desc    Apply for a job
 // @route   POST /api/applications
@@ -29,6 +31,35 @@ const applyJob = async (req, res) => {
     if (existingApplication) {
       return res.status(400).json({ message: 'You have already applied for this job' });
     }
+
+    // Calculate match score
+    let matchScore = 0;
+    try {
+      const resume = await Resume.findOne({ candidateId });
+      if (resume) {
+        const result = calculateMatchScore(resume.skillsExtracted, job.skillsRequired);
+        matchScore = result.score;
+      }
+    } catch (metricError) {
+      console.error('Error calculating match score on apply:', metricError);
+      // Proceed with 0 score if calculation fails
+    }
+
+    // Create application
+    const application = await Application.create({
+      candidateId,
+      jobId,
+      matchScore,
+      status: 'Applied',
+      appliedAt: Date.now(),
+    });
+
+    res.status(201).json(application);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
     // Create application
     const application = await Application.create({
