@@ -9,6 +9,7 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const userRoutes = require('./routes/userRoutes');
 const resumeRoutes = require('./routes/resumeRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Base route
 app.get('/', (req, res) => {
