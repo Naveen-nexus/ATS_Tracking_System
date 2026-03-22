@@ -3,6 +3,7 @@ const Job = require('../models/Job');
 const Resume = require('../models/Resume');
 const Notification = require('../models/Notification');
 const { calculateMatchScore } = require('../utils/matchScorer');
+const sendEmail = require('../utils/emailService');
 
 // @desc    Apply for a job
 // @route   POST /api/applications
@@ -18,7 +19,7 @@ const applyJob = async (req, res) => {
     }
 
     // Check if job exists
-    const job = await Job.findById(jobId);
+    const job = await Job.findById(jobId).populate('postedBy', 'email name');
     if (!job) {
       return res.status(404).json({ message: 'Job not found' });
     }
@@ -55,22 +56,46 @@ const applyJob = async (req, res) => {
       appliedAt: Date.now(),
     });
 
-    // Notify Recruiter
+    // Notify Recruiter (In-App)
     try {
       await Notification.create({
-        recipientId: job.postedBy,
+        recipientId: job.postedBy._id,
         senderId: candidateId,
         type: 'NEW_APPLICATION',
         message: `New application for position: ${job.title}`,
         relatedId: application._id,
         onModel: 'Application',
       });
+      
+      // Send Email Notification to Recruiter
+      if (job.postedBy && job.postedBy.email) {
+        const emailSubject = `New Application for ${job.title}`;
+        const emailText = `Dear ${job.postedBy.name},\n\nYou have received a new application for the position of ${job.title}.\n\nView details in your dashboard.\n\nBest regards,\nATS Team`;
+        
+        await sendEmail(job.postedBy.email, emailSubject, emailText);
+      }
+
     } catch (notifError) {
       console.error('Notification failed:', notifError);
     }
+    
+    // Notify Candidate (We can skip separate email for application received unless desired, let's keep it simple for now or maybe send confirmation email)
+    // Sending confirmation to candidate
+     try {
+         const candidate = req.user; // We have user in req
+         if (candidate && candidate.email) {
+            const emailSubject = `Application Received: ${job.title}`;
+            const emailText = `Dear ${candidate.name},\n\nYour application for ${job.title} at ${job.companyName} has been received successfully.\n\nBest regards,\nATS Team`;
+            await sendEmail(candidate.email, emailSubject, emailText);
+         }
+     } catch (candidateEmailError) {
+          console.error('Candidate email notification failed', candidateEmailError);
+     }
+
 
     res.status(201).json(application);
   } catch (error) {
+    console.error('Apply Job Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -110,7 +135,9 @@ const updateApplicationStatus = async (req, res) => {
       return res.status(403).json({ message: 'Only recruiters can update application status' });
     }
 
-    const application = await Application.findById(applicationId).populate('jobId');
+    const application = await Application.findById(applicationId)
+      .populate('jobId')
+      .populate('candidateId', 'email name');
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -124,22 +151,32 @@ const updateApplicationStatus = async (req, res) => {
     application.status = status;
     await application.save();
 
-    // Notify Candidate
+    // Notify Candidate (In-App)
     try {
-      await Notification.create({
-        recipientId: application.candidateId,
-        senderId: req.user._id,
-        type: 'STATUS_UPDATE',
-        message: `Your application status for ${application.jobId.title} has been updated to: ${status}`,
-        relatedId: application._id,
-        onModel: 'Application',
-      });
+      if (application.candidateId) {
+        await Notification.create({
+          recipientId: application.candidateId._id,
+          senderId: req.user._id,
+          type: 'STATUS_UPDATE',
+          message: `Your application status for ${application.jobId.title} has been updated to: ${status}`,
+          relatedId: application._id,
+          onModel: 'Application',
+        });
+
+        // Send Email Notification to Candidate
+        if (application.candidateId.email) {
+           const emailSubject = `Application Status Update: ${application.jobId.title}`;
+           const emailText = `Dear ${application.candidateId.name},\n\nYour application status for the position of ${application.jobId.title} at ${application.jobId.companyName} has been updated to: ${status}.\n\nLog in to your dashboard for more details.\n\nBest regards,\nATS Team`;
+           await sendEmail(application.candidateId.email, emailSubject, emailText);
+        }
+      }
     } catch (notifError) {
       console.error('Notification failed:', notifError);
     }
 
     res.json(application);
   } catch (error) {
+    console.error('Update Application Status Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
