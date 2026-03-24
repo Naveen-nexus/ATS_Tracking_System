@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Star, XCircle, Calendar, ArrowRight, MapPin, Briefcase } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { ApplicationPieChart } from '../../components/charts/ApplicationPieChart';
 import { ActivityLineChart } from '../../components/charts/ActivityLineChart';
-import { mockApplications, mockJobs, applicationStatusChart, monthlyApplicationsData } from '../../data/mockData';
+import { applicationService } from '../../services/applicationService';
 import { getStatusColor, formatDate, formatSalary } from '../../utils/helpers';
 
 const statusBadgeVariant = (status) => {
@@ -18,10 +18,45 @@ const statusBadgeVariant = (status) => {
 
 export const CandidateDashboard = () => {
   const { user } = useAuth();
-  const total = mockApplications.length;
-  const shortlisted = mockApplications.filter(a => a.status === 'Shortlisted').length;
-  const rejected = mockApplications.filter(a => a.status === 'Rejected').length;
-  const interviews = mockApplications.filter(a => a.status === 'Interview Scheduled').length;
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApps = async () => {
+        try {
+            setLoading(true);
+            const data = await applicationService.getMyApplications();
+            setApplications(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchApps();
+  }, []);
+
+  const total = applications.length;
+  const shortlisted = applications.filter(a => a.status === 'Shortlisted').length;
+  const rejected = applications.filter(a => a.status === 'Rejected').length;
+  const interviews = applications.filter(a => a.status === 'Interview Scheduled').length;
+  
+  // Calculate status distribution for chart
+  const statusCounts = applications.reduce((acc, app) => {
+      acc[app.status] = (acc[app.status] || 0) + 1;
+      return acc;
+  }, {});
+  
+  const pieData = Object.keys(statusCounts).map(key => ({ name: key, value: statusCounts[key] }));
+
+  // Mock activity data if not available from backend yet
+  const activityData = [
+      { name: 'Jan', value: 2 },
+      { name: 'Feb', value: 5 },
+      { name: 'Mar', value: total },
+  ];
+
+  if (loading) return <div className="p-8 text-center">Loading dashboard...</div>;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -50,11 +85,16 @@ export const CandidateDashboard = () => {
         <div className="xl:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Monthly Application Activity</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Last 6 months</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Application Status</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Current Pipeline</p>
             </CardHeader>
             <CardBody>
-              <ActivityLineChart data={monthlyApplicationsData} />
+               {pieData.length > 0 ? (
+                  <div className="h-64 flex justify-center">
+                    {/* Placeholder as standard PieChart component might need specific props */}
+                     <ApplicationPieChart data={pieData} />
+                  </div>
+               ) : <div className="text-center py-10 text-gray-400">No applications yet</div>}
             </CardBody>
           </Card>
           <Card>
@@ -78,26 +118,64 @@ export const CandidateDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {mockApplications.slice(0, 4).map(app => (
-                    <tr key={app.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                  {applications.slice(0, 4).map(app => (
+                    <tr key={app._id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: app.companyColor }}>{app.companyLogo}</div>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: '#2563eb' }}>{app.jobId?.companyName?.[0] || 'C'}</div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{app.company}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{app.jobTitle}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{app.jobId?.companyName}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{app.jobId?.title}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-3 hidden sm:table-cell">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{app.jobTitle}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(app.appliedDate)}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{app.jobId?.title}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(app.createdAt)}</p>
                       </td>
                       <td className="px-6 py-3 hidden md:table-cell">
                         <span className={`text-sm font-semibold ${app.matchScore >= 80 ? 'text-green-600' : app.matchScore >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>{app.matchScore}%</span>
                       </td>
                       <td className="px-6 py-3">
                         <Badge variant={statusBadgeVariant(app.status)} dot>{app.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                  {applications.length === 0 && (
+                      <tr><td colSpan="4" className="text-center py-4 text-sm text-gray-500">No recent applications</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+         <div className="space-y-6">
+            <Card>
+                 <CardHeader><h3 className="text-base font-semibold text-gray-900 dark:text-white">Profile Strength</h3></CardHeader>
+                 <CardBody>
+                     <div className="flex flex-col items-center justify-center py-4">
+                         {/* Placeholder for real profile strength based on Resume */}
+                         <div className="relative w-32 h-32 mb-4">
+                             <svg className="w-full h-full transform -rotate-90">
+                                 <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-200 dark:text-gray-700" />
+                                 <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={377} strokeDashoffset={377 - (377 * 75) / 100} className="text-blue-600" />
+                             </svg>
+                             <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                 <span className="text-3xl font-bold text-gray-900 dark:text-white">75%</span>
+                                 <span className="text-xs text-gray-500">Good</span>
+                             </div>
+                         </div>
+                         <p className="text-sm text-center text-gray-600 mt-2">Update your resume to reach 100%!</p>
+                         <Link to="/candidate/profile" className="mt-4"><Button size="sm" variant="secondary">Update Profile</Button></Link>
+                     </div>
+                 </CardBody>
+            </Card>
+         </div>
+      </div>
+    </div>
+  );
+};
+
                       </td>
                     </tr>
                   ))}

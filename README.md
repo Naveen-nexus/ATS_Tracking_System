@@ -29,25 +29,78 @@ A comprehensive Applicant Tracking System (ATS) built with React, Vite, and Tail
 
 ## Getting Started
 
-1.  **Clone the repository**
+### Prerequisites
+*   Node.js (v14 or higher)
+*   MongoDB (Local or Atlas)
+
+### Backend Setup
+
+1.  Navigate to the backend directory:
     ```bash
-    git clone https://github.com/Naveen-nexus/ATS_TRACKING_SYSTEM.git
-    cd ATS_TRACKING_SYSTEM
+    cd backend
     ```
 
-2.  **Install dependencies**
+2.  Install dependencies:
     ```bash
     npm install
     ```
 
-3.  **Run development server**
+3.  Configure environment variables:
+    Create a `.env` file in the `backend/` directory based on `.env.example`:
+    ```env
+    NODE_ENV=development
+    PORT=5000
+    MONGO_URI=mongodb://localhost:27017/ats_tracking_system
+    JWT_SECRET=your_super_secret_key
+    
+    # Email Configuration
+    EMAIL_SERVICE=gmail
+    EMAIL_USER=your_email@gmail.com
+    EMAIL_PASS=your_app_password
+    EMAIL_FROM=no-reply@ats.com
+    
+    # Frontend URL (for CORS)
+    CLIENT_URL=http://localhost:5173
+    ```
+
+4.  Start the backend server:
     ```bash
     npm run dev
     ```
 
-4.  **Build for production**
+### Frontend Setup
+
+1.  Navigate to the root directory (in a new terminal):
+    ```bash
+    # If you are in backend/, go back
+    cd ..
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+
+4.  Open your browser and navigate to `http://localhost:5173`.
+
+### Production Build
+
+1.  Build the frontend:
     ```bash
     npm run build
+    ```
+
+2.  Start the backend in production mode:
+    ```bash
+    cd backend
+    npm start
+    ```
+
     ```
 
 ## Project Structure

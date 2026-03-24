@@ -28,6 +28,10 @@ const applicationSchema = new mongoose.Schema(
       ],
       default: 'Applied',
     },
+    notes: {
+      type: String,
+      default: '',
+    },
     appliedAt: {
       type: Date,
       default: Date.now,

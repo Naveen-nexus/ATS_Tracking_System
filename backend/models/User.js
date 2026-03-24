@@ -33,6 +33,34 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    bio: {
+      type: String,
+      default: '',
+    },
+    title: {
+      type: String, // e.g. "Senior Frontend Developer"
+      default: '',
+    },
+    phone: {
+      type: String,
+      default: '',
+    },
+    education: {
+      type: String,
+      default: '',
+    },
+    linkedin: {
+      type: String,
+      default: '',
+    },
+    portfolio: {
+      type: String,
+      default: '',
+    },
+    github: {
+      type: String,
+      default: '',
+    },
     profilePicture: {
       type: String,
       default: '',

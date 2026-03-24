@@ -78,6 +78,7 @@ const loginUser = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
 
 // @desc    Logout user / clear cookie
 // @route   POST /api/auth/logout

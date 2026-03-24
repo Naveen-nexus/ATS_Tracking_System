@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, SlidersHorizontal, Bookmark, ExternalLink, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
@@ -6,53 +6,79 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { mockJobs } from '../../data/mockData';
+// Remove mockJobs import
 import { formatSalary } from '../../utils/helpers';
 import toast from 'react-hot-toast';
+import { jobService } from '../../services/jobService'; // Import jobService
+import { applicationService } from '../../services/applicationService'; // Import applicationService
 
-const JOBS_PER_PAGE = 4;
+const JOBS_PER_PAGE = 10;
 
 export const BrowseJobs = () => {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
   const [jobType, setJobType] = useState('All');
-  const [experienceLevel, setExperienceLevel] = useState('All');
+  // Removed experienceLevel state as backend doesn't support it yet
   const [sortBy, setSortBy] = useState('newest');
   const [savedJobs, setSavedJobs] = useState([]);
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Fetch jobs on mount and when filters change
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const filters = { search, location, jobType, page };
+        const data = await jobService.getAllJobs(filters);
+        
+        // Backend returns: { jobs: [...], page: 1, limit: 10, totalPages: X } or potentially just array depending on controller
+        // Let's assume standard pagination struct or simply array if simple find()
+        // Checking jobController again: It returns `res.json(jobs);` directly.
+        // It does NOT return totalPages in current implementation.
+        // So handling pagination client-side for now or modifying backend.
+        // For simplicity, let's just set jobs = data if it's array.
+        
+        if (Array.isArray(data)) {
+            setJobs(data);
+             // Since backend `getJobs` returns just `jobs`, we can't get totalPages easily.
+             // Assume simplified pagination (next/prev only if data available)
+             setTotalPages(Math.ceil(data.length / JOBS_PER_PAGE) || 1); // Only for client-side pagination if fetched all
+        } else if (data.jobs) {
+             setJobs(data.jobs);
+             setTotalPages(data.totalPages || 1);
+        }
+
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+        toast.error('Failed to load jobs');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [search, location, jobType, page, sortBy]);
+
 
   const toggleSave = (jobId) => {
+    // Ideally call API to save job
     setSavedJobs(prev => prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]);
     toast.success(savedJobs.includes(jobId) ? 'Job removed from saved' : 'Job saved!');
   };
-
-  const handleApply = (job) => {
-    if (!appliedJobs.includes(job.id)) {
-      setAppliedJobs(prev => [...prev, job.id]);
-      toast.success(`Applied to ${job.title} at ${job.company}!`);
-    }
-  };
-
-  const filtered = useMemo(() => {
-    let jobs = [...mockJobs];
-    if (search) jobs = jobs.filter(j => j.title.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase()) || j.skills.some(s => s.toLowerCase().includes(search.toLowerCase())));
-    if (location) jobs = jobs.filter(j => j.location.toLowerCase().includes(location.toLowerCase()));
-    if (jobType !== 'All') jobs = jobs.filter(j => j.type === jobType);
-    if (sortBy === 'salary') jobs.sort((a, b) => b.salary.max - a.salary.max);
-    else if (sortBy === 'match') jobs.sort((a, b) => b.matchScore - a.matchScore);
-    return jobs;
-  }, [search, location, jobType, sortBy]);
-
-  const totalPages = Math.ceil(filtered.length / JOBS_PER_PAGE);
-  const paginated = filtered.slice((page - 1) * JOBS_PER_PAGE, page * JOBS_PER_PAGE);
+  
+  // Note: Actual application is done in JobDetails usually, but quick apply here could call API
+  // Let's keep navigation for now.
 
   return (
     <div className="max-w-7xl mx-auto space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Browse Jobs</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{filtered.length} jobs found matching your profile</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{jobs.length} jobs found matching your profile</p>
       </div>
 
       {/* Search Bar */}
@@ -98,43 +124,46 @@ export const BrowseJobs = () => {
       )}
 
       {/* Job Cards */}
-      {paginated.length === 0 ? (
+      {jobs.length === 0 && !loading ? (
         <EmptyState type="search" title="No jobs found" description="Try adjusting your search or filters to find more opportunities." />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {paginated.map(job => (
-            <Card key={job.id} hover className="p-5 flex flex-col gap-4">
+          {jobs.map(job => (
+            <Card key={job._id || job.id} hover className="p-5 flex flex-col gap-4">
               <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: job.companyColor }}>{job.companyLogo}</div>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: '#3b82f6' }}>{job.companyLogo || (job.companyName ? job.companyName[0] : 'C')}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{job.title}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{job.company}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{job.companyName}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 ${job.matchScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : job.matchScore >= 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>{job.matchScore}% Match</span>
+                    {/* Match Score - Placeholder if not available */}
+                    {job.matchScore !== undefined && (
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 ${job.matchScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-600'}`}>{job.matchScore}% Match</span>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1"><MapPin size={12} />{job.location}</span>
-                <Badge variant={job.type === 'Remote' ? 'green' : job.type === 'Hybrid' ? 'blue' : 'default'}>{job.type}</Badge>
-                <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(job.salary.min, job.salary.max)}</span>
+                <Badge variant={job.jobType === 'Remote' ? 'green' : 'default'}>{job.jobType}</Badge>
+                <span className="font-medium text-gray-700 dark:text-gray-300">{formatSalary(job.salaryMin, job.salaryMax)}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {job.skills.slice(0, 4).map(skill => <Tag key={skill} variant="gray">{skill}</Tag>)}
-                {job.skills.length > 4 && <Tag variant="gray">+{job.skills.length - 4}</Tag>}
+                {(job.skillsRequired || []).slice(0, 4).map(skill => <Tag key={skill} variant="gray">{skill}</Tag>)}
+                {(job.skillsRequired || []).length > 4 && <Tag variant="gray">+{job.skillsRequired.length - 4}</Tag>}
               </div>
               <div className="flex items-center gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
-                <Link to={`/candidate/jobs/${job.id}`} className="flex-1">
-                  <Button variant="primary" size="sm" className="w-full" disabled={appliedJobs.includes(job.id)}>
-                    {appliedJobs.includes(job.id) ? 'Applied ✓' : 'Apply Now'}
+                <Link to={`/candidate/jobs/${job._id}`} className="flex-1">
+                  <Button variant="primary" size="sm" className="w-full" disabled={appliedJobs.includes(job._id)}>
+                    {appliedJobs.includes(job._id) ? 'Applied ✓' : 'Apply Now'}
                   </Button>
                 </Link>
-                <button onClick={() => toggleSave(job.id)} className={`p-2 rounded-lg border transition-all ${savedJobs.includes(job.id) ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600' : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-blue-300 hover:text-blue-600'}`}>
-                  <Bookmark size={16} fill={savedJobs.includes(job.id) ? 'currentColor' : 'none'} />
+                <button onClick={() => toggleSave(job._id)} className={`p-2 rounded-lg border transition-all ${savedJobs.includes(job._id) ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600' : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-blue-300 hover:text-blue-600'}`}>
+                  <Bookmark size={16} fill={savedJobs.includes(job._id) ? 'currentColor' : 'none'} />
                 </button>
-                <Link to={`/candidate/jobs/${job.id}`}>
+                <Link to={`/candidate/jobs/${job._id}`}>
                   <button className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:border-blue-300 hover:text-blue-600 transition-all"><ExternalLink size={16} /></button>
                 </Link>
               </div>

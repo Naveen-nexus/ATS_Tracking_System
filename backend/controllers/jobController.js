@@ -1,5 +1,6 @@
 const Job = require('../models/Job');
 const Resume = require('../models/Resume');
+const SavedJob = require('../models/SavedJob');
 const { calculateMatchScore } = require('../utils/matchScorer');
 
 // @desc    Create a new job
@@ -137,10 +138,112 @@ const getJobMatch = async (req, res) => {
   }
 };
 
+// @desc    Get recruiter's jobs
+// @route   GET /api/jobs/mine/recruiter
+// @access  Private (Recruiter)
+const getMyPostedJobs = async (req, res) => {
+  try {
+    if (req.user.role !== 'recruiter') {
+      return res.status(403).json({ message: 'Access denied. Recruiter only.' });
+    }
+    const jobs = await Job.find({ postedBy: req.user._id }).sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update a job
+// @route   PUT /api/jobs/:id
+// @access  Private (Recruiter)
+const updateJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    if (job.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    const updatedJob = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedJob);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a job
+// @route   DELETE /api/jobs/:id
+// @access  Private (Recruiter)
+const deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    if (job.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    await Job.deleteOne({ _id: req.params.id });
+    res.json({ message: 'Job removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get saved jobs
+// @route   GET /api/jobs/saved
+// @access  Private (Candidate)
+const getSavedJobs = async (req, res) => {
+  try {
+    const saved = await SavedJob.find({ candidateId: req.user._id }).populate('jobId');
+    // Filter out null jobs (if deleted)
+    const jobs = saved.map(s => s.jobId).filter(j => j !== null);
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Save a job
+// @route   POST /api/jobs/:id/save
+// @access  Private (Candidate)
+const saveJob = async (req, res) => {
+  try {
+    const exists = await SavedJob.findOne({ candidateId: req.user._id, jobId: req.params.id });
+    if (exists) return res.status(400).json({ message: 'Job already saved' });
+
+    await SavedJob.create({ candidateId: req.user._id, jobId: req.params.id });
+    res.status(201).json({ message: 'Job saved' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Unsave a job
+// @route   DELETE /api/jobs/:id/save
+// @access  Private (Candidate)
+const unsaveJob = async (req, res) => {
+  try {
+    await SavedJob.findOneAndDelete({ candidateId: req.user._id, jobId: req.params.id });
+    res.json({ message: 'Job unsaved' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createJob,
   getJobs,
   getJobById,
   getJobMatch,
+  getMyPostedJobs,
+  updateJob,
+  deleteJob,
+  getSavedJobs,
+  saveJob,
+  unsaveJob
 };
 

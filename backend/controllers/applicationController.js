@@ -128,7 +128,7 @@ const getCandidateApplications = async (req, res) => {
 // @access  Private (Recruiter only)
 const updateApplicationStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, notes } = req.body;
     const applicationId = req.params.id;
 
     if (req.user.role !== 'recruiter') {
@@ -148,31 +148,40 @@ const updateApplicationStatus = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this application' });
     }
 
-    application.status = status;
-    await application.save();
+    if (status) {
+        application.status = status;
+        // Add to history
+        application.statusHistory.push({ status, updatedAt: Date.now() });
 
-    // Notify Candidate (In-App)
-    try {
-      if (application.candidateId) {
-        await Notification.create({
-          recipientId: application.candidateId._id,
-          senderId: req.user._id,
-          type: 'STATUS_UPDATE',
-          message: `Your application status for ${application.jobId.title} has been updated to: ${status}`,
-          relatedId: application._id,
-          onModel: 'Application',
-        });
+        // Notify Candidate (In-App)
+        try {
+          if (application.candidateId) {
+            await Notification.create({
+              recipientId: application.candidateId._id,
+              senderId: req.user._id,
+              type: 'STATUS_UPDATE',
+              message: `Your application status for ${application.jobId.title} has been updated to: ${status}`,
+              relatedId: application._id,
+              onModel: 'Application',
+            });
 
-        // Send Email Notification to Candidate
-        if (application.candidateId.email) {
-           const emailSubject = `Application Status Update: ${application.jobId.title}`;
-           const emailText = `Dear ${application.candidateId.name},\n\nYour application status for the position of ${application.jobId.title} at ${application.jobId.companyName} has been updated to: ${status}.\n\nLog in to your dashboard for more details.\n\nBest regards,\nATS Team`;
-           await sendEmail(application.candidateId.email, emailSubject, emailText);
+            // Send Email Notification to Candidate
+            if (application.candidateId.email) {
+               const emailSubject = `Application Status Update: ${application.jobId.title}`;
+               const emailText = `Dear ${application.candidateId.name},\n\nYour application status for the position of ${application.jobId.title} at ${application.jobId.companyName} has been updated to: ${status}.\n\nLog in to your dashboard for more details.\n\nBest regards,\nATS Team`;
+               // await sendEmail(application.candidateId.email, emailSubject, emailText); // Enabled if needed
+            }
+          }
+        } catch (notifError) {
+          console.error('Notification failed:', notifError);
         }
-      }
-    } catch (notifError) {
-      console.error('Notification failed:', notifError);
     }
+    
+    if (notes !== undefined) {
+        application.notes = notes;
+    }
+
+    await application.save();
 
     res.json(application);
   } catch (error) {
@@ -181,8 +190,64 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
+// @desc    Get all applications for a recruiter's jobs
+// @route   GET /api/applications/recruiter
+// @access  Private (Recruiter only)
+const getRecruiterApplications = async (req, res) => {
+  try {
+    if (req.user.role !== 'recruiter') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // 1. Find all jobs posted by this recruiter
+    const jobs = await Job.find({ postedBy: req.user._id }).select('_id');
+    const jobIds = jobs.map(job => job._id);
+
+    // 2. Find applications for these jobs
+    const applications = await Application.find({ jobId: { $in: jobIds } })
+      .populate('candidateId', 'name email experienceYears skills location avatar') // Populate candidate details
+      .populate('jobId', 'title companyName') // Populate job title
+      .sort({ matchScore: -1, createdAt: -1 });
+
+    res.json(applications);
+  } catch (error) {
+    console.error('Get Recruiter Applications Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// @desc    Get application by ID
+// @route   GET /api/applications/:id
+// @access  Private
+const getApplicationById = async (req, res) => {
+  try {
+    const application = await Application.findById(req.params.id)
+      .populate('jobId', 'title companyName requiredSkills experienceLevel postedBy')
+      .populate('candidateId', 'name email skills experienceYears resumeId avatar location phone linkedIn');
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Check authorization: Must be the recruiter who posted the job or the candidate who applied
+    const isOwnerRecruiter = req.user.role === 'recruiter' && application.jobId.postedBy.toString() === req.user._id.toString();
+    const isOwnerCandidate = req.user.role === 'candidate' && application.candidateId._id.toString() === req.user._id.toString();
+
+    if (!isOwnerRecruiter && !isOwnerCandidate) {
+      return res.status(403).json({ message: 'Not authorized to view this application' });
+    }
+
+    res.json(application);
+  } catch (error) {
+    console.error('Get Application By ID Error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   applyJob,
   getCandidateApplications,
   updateApplicationStatus,
+  getRecruiterApplications,
+  getApplicationById
 };

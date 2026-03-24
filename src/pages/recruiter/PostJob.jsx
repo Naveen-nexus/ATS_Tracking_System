@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Tag } from '../../components/ui/Tag';
 import { Modal } from '../../components/ui/Modal';
 import toast from 'react-hot-toast';
+import { jobService } from '../../services/jobService';
 
 const skillSuggestions = ['React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'AWS', 'Docker', 'PostgreSQL', 'MongoDB', 'GraphQL', 'Vue.js', 'Angular', 'Java', 'Go', 'Kubernetes', 'Terraform'];
 
@@ -15,6 +16,10 @@ export const PostJob = () => {
   const [publishing, setPublishing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [skillInput, setSkillInput] = useState('');
+  // Default deadline 30 days from now
+  const defaultDeadline = new Date();
+  defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+
   const [form, setForm] = useState({
     title: '',
     company: '',
@@ -24,8 +29,7 @@ export const PostJob = () => {
     salary: [60000, 120000],
     skills: [],
     description: '',
-    requirements: '',
-    benefits: '',
+    deadline: defaultDeadline.toISOString().split('T')[0],
   });
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -36,22 +40,52 @@ export const PostJob = () => {
     setSkillInput('');
   };
 
-  const handleSkillKeyDown = (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(skillInput); } };
+  const handleSkillKeyDown = (e) => { 
+      if (e.key === 'Enter' || e.key === ',') { 
+          e.preventDefault(); 
+          if(skillInput) addSkill(skillInput); 
+      } 
+  };
 
   const handleDraft = async () => {
     setSaving(true);
+    // TODO: Implement save draft API if available
     await new Promise(r => setTimeout(r, 800));
     setSaving(false);
     toast.success('Job saved as draft!');
   };
 
   const handlePublish = async () => {
-    if (!form.title || !form.company || !form.description) { toast.error('Please fill in required fields (title, company, description)'); return; }
-    setPublishing(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setPublishing(false);
-    toast.success('Job published successfully!');
-    navigate('/recruiter/jobs');
+    if (!form.title || !form.company || !form.description || !form.location) { 
+        toast.error('Please fill in required fields'); 
+        return; 
+    }
+
+    try {
+        setPublishing(true);
+        const jobData = {
+            title: form.title,
+            companyName: form.company,
+            location: form.location,
+            jobType: form.type,
+            experienceMin: form.experience[0],
+            experienceMax: form.experience[1],
+            salaryMin: form.salary[0],
+            salaryMax: form.salary[1],
+            skillsRequired: form.skills,
+            description: form.description,
+            deadline: form.deadline
+        };
+
+        await jobService.createJob(jobData);
+        toast.success('Job published successfully!');
+        navigate('/recruiter/dashboard'); // Redirect to dashboard or jobs list
+    } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.message || 'Failed to publish job');
+    } finally {
+        setPublishing(false);
+    }
   };
 
   const fmtSalary = (n) => n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`;
@@ -81,7 +115,7 @@ export const PostJob = () => {
                   <input value={form.company} onChange={e => set('company', e.target.value)} placeholder="Your company name" className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location <span className="text-red-500">*</span></label>
                   <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. San Francisco, CA or Remote" className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" />
                 </div>
                 <div>
@@ -92,6 +126,10 @@ export const PostJob = () => {
                     </select>
                     <ChevronDown size={16} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
+                </div>
+                 <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+                  <input type="date" value={form.deadline} onChange={e => set('deadline', e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" />
                 </div>
               </div>
             </CardBody>
