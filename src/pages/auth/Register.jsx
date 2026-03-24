@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const getStrength = (pwd) => {
+  if (!pwd) return 0;
   let score = 0;
   if (pwd.length >= 8) score++;
   if (/[A-Z]/.test(pwd)) score++;
@@ -21,7 +22,7 @@ const strengthConfig = [
 ];
 
 export const Register = () => {
-  const { login } = useAuth();
+  const { register } = useAuth(); // Changed from login to register
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '', role: 'candidate', company: '' });
   const [errors, setErrors] = useState({});
@@ -48,11 +49,17 @@ export const Register = () => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    login({ id: Date.now(), name: form.name, email: form.email, role: form.role, company: form.company }, false);
-    toast.success('Account created! Welcome to TalentFlow.');
-    navigate(form.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard');
-    setLoading(false);
+
+    try {
+        await register(form);
+        toast.success('Account created! Welcome to TalentFlow.');
+        navigate(form.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard');
+    } catch (error) {
+        toast.error(error.message || 'Registration failed');
+        setErrors({ ...errors, general: error.message });
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (

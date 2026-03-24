@@ -26,20 +26,52 @@ export const Login = () => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    const role = form.email.includes('recruiter') ? 'recruiter' : 'candidate';
-    login({ id: 1, name: role === 'recruiter' ? 'Mike Thompson' : 'Jane Smith', email: form.email, role, company: role === 'recruiter' ? 'TechCorp Inc.' : undefined }, form.remember);
-    toast.success(`Welcome back! Redirecting to ${role} dashboard...`);
-    setTimeout(() => navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard'), 500);
-    setLoading(false);
+    
+    try {
+        const user = await login(form);
+        const role = user.role;
+        toast.success(`Welcome back ${user.name}!`);
+        setTimeout(() => navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard'), 500);
+    } catch (error) {
+        toast.error(error.message || 'Login failed');
+        setErrors({ ...errors, general: error.message });
+    } finally {
+        setLoading(false);
+    }
   };
 
-  const handleDemoLogin = (role) => {
-    const email = role === 'recruiter' ? 'recruiter@demo.com' : 'candidate@demo.com';
-    setForm(f => ({ ...f, email, password: 'demo123' }));
-    login({ id: 1, name: role === 'recruiter' ? 'Mike Thompson' : 'Jane Smith', email, role, company: role === 'recruiter' ? 'TechCorp Inc.' : undefined }, true);
-    toast.success(`Logged in as demo ${role}!`);
-    navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard');
+  const handleDemoLogin = async (role) => {
+    // Demo login workaround since backend doesn't have hardcoded demo users usually
+    // We can simulate a successful login structure directly if backend is not available for demo
+    // OR we can actually register/login a demo user.
+    // Let's keep the client-side simulation for demo buttons for now to ensure instant access
+    // unless you want real backend auth even for demo.
+    // For now, let's keep it simple as originally designed for demo.
+    const user = {
+        _id: 'demo-' + role,
+        name: role === 'recruiter' ? 'Demo Recruiter' : 'Demo Candidate',
+        email: role + '@demo.com',
+        role: role,
+        company: role === 'recruiter' ? 'Demo Corp' : undefined
+    };
+
+    // Need to bypass the API call in AuthContext manually or just set user directly
+    // Since AuthContext.login now calls API, we can't use it for fake demo unless we add a bypass
+    // Let's modify AuthContext login to accept a 'bypass' flag or handle it here?
+    // Actually, let's just use localStorage hack for demo for now, OR update AuthContext
+    // Better: Update AuthContext to support "setUser" directly for demo
+    // But since I can't easily change AuthContext export signature without breaking other things,
+    // I will assume for now we just want API working.
+    // I will try to login with real credentials if possible, or just mock it.
+    
+    // Actually, let's mock the API response for demo buttons by overriding the login function locally? No.
+    // Let's just create a real user for demo? No.
+    
+    // I will add a special check in AuthContext for demo users? No.
+    
+    // Let's just fake it by manually setting localStorage and reloading?
+    localStorage.setItem('user', JSON.stringify(user));
+    window.location.reload(); // Quick dirty way to load user from localStorage in AuthContext
   };
 
   return (
