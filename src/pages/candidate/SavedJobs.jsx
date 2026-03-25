@@ -112,32 +112,3 @@ export const SavedJobs = () => {
     </div>
   );
 };
-
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${job.matchScore >= 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{job.matchScore}%</span>
-                      <button onClick={() => removeSaved(job.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-gray-400 hover:text-red-500 transition-colors">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {job.skills.slice(0, 4).map(s => <Tag key={s} variant="gray">{s}</Tag>)}
-                  </div>
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <Link to={`/candidate/jobs/${job.id}`} className="flex-1">
-                      <Button size="sm" className="w-full">Apply Now</Button>
-                    </Link>
-                    <Link to={`/candidate/jobs/${job.id}`}>
-                      <Button size="sm" variant="secondary">View Details</Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};

@@ -194,12 +194,3 @@ export const RecruiterDashboard = () => {
     </div>
   );
 };
-
-              ))}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
