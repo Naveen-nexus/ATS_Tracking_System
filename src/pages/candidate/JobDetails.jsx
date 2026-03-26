@@ -174,11 +174,3 @@ export const JobDetails = () => {
     </div>
   );
 };
-              ))}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
