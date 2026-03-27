@@ -201,37 +201,3 @@ export const Applicants = () => {
     </div>
   );
 };
-
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${c.matchScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' : c.matchScore >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{c.matchScore}% Match</span>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <ProgressBar value={c.matchScore} color={c.matchScore >= 80 ? 'green' : c.matchScore >= 60 ? 'yellow' : 'red'} size="sm" />
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {c.skills.slice(0, 3).map(s => <Tag key={s} variant="blue">{s}</Tag>)}
-                      {c.skills.length > 3 && <Tag variant="gray">+{c.skills.length - 3}</Tag>}
-                    </div>
-                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <div className="relative flex-1">
-                        <select value={c.status} onChange={e => updateStatus(c.id, e.target.value)} className="w-full appearance-none text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          {['Applied', 'Under Review', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'].map(s => <option key={s}>{s}</option>)}
-                        </select>
-                      </div>
-                      <Badge variant={statusVariants[c.status] || 'default'} dot>{c.status}</Badge>
-                      <Link to={`/recruiter/applicants/${c.id}`}>
-                        <Button size="xs" variant="secondary">View Resume</Button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
