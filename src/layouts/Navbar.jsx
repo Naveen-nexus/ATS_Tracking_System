@@ -20,7 +20,7 @@ export const Navbar = ({ onToggleSidebar, sidebarOpen }) => {
   };
 
   return (
-    <nav className="h-16 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shadow-sm">
+    <nav className="relative h-16 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shadow-sm rounded-b-[1.75rem]">
       <div className="flex items-center gap-3">
         <button onClick={onToggleSidebar} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors lg:hidden">
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
@@ -81,6 +81,11 @@ export const Navbar = ({ onToggleSidebar, sidebarOpen }) => {
           )}
         </div>
       </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 -bottom-2.5 h-5 w-40 -translate-x-1/2 rounded-b-full bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"
+      />
     </nav>
   );
 };
