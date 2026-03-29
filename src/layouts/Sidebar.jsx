@@ -36,58 +36,57 @@ export const Sidebar = ({ open, onClose }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
-      {open && (
+        {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-opacity"
           onClick={onClose}
         />
       )}
       <aside className={cn(
-        'fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 z-20 transition-transform duration-300 flex flex-col shadow-sm',
+        'fixed top-0 left-0 h-full w-72 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border-r border-gray-100 dark:border-gray-800/50 z-40 transition-transform duration-300 flex flex-col shadow-2xl lg:shadow-none',
         open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <BriefcaseBusiness size={16} className="text-white" />
+        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100 dark:border-gray-800/50 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
+              <BriefcaseBusiness size={20} className="text-white" />
             </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">TalentFlow</span>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 tracking-tight">TalentFlow</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 lg:hidden transition-colors"
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 lg:hidden transition-colors"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="mb-3 px-3">
-            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide">
+          <div className="mb-4 px-2">
+            <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
               {user?.role === 'recruiter' ? 'Recruiter Menu' : 'Navigation'}
             </span>
           </div>
-          <ul className="space-y-0.5">
+          <ul className="space-y-1">
             {navItems.map(item => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   onClick={() => window.innerWidth < 1024 && onClose()}
                   className={({ isActive }) => cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                    'group flex items-center gap-3.5 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
+                      ? 'bg-blue-600 shadow-md shadow-blue-500/25 text-white'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100'
                   )}
                 >
                   {({ isActive }) => (
                     <>
                       <item.icon
-                        size={18}
-                        className={isActive ? 'text-blue-600 dark:text-blue-400' : ''}
+                        size={20}
+                        className={cn('transition-colors duration-200', isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400')}
                       />
                       {item.label}
                     </>
@@ -99,21 +98,21 @@ export const Sidebar = ({ open, onClose }) => {
         </nav>
 
         {/* User Info + Logout */}
-        <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
-          <div className="flex items-center gap-2.5 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800/50 m-2 rounded-3xl bg-gray-50 dark:bg-white/5 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0 shadow-sm border border-white/10">
               {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{user?.name}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 capitalize">{user?.role}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize truncate">{user?.role}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 w-full transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 w-full transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             Sign Out
           </button>
         </div>
