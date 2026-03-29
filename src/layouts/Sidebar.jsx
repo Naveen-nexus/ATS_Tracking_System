@@ -43,76 +43,70 @@ export const Sidebar = ({ open, onClose }) => {
         />
       )}
       <aside className={cn(
-        'fixed top-0 left-0 h-full w-72 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border-r border-gray-100 dark:border-gray-800/50 z-40 transition-transform duration-300 flex flex-col shadow-2xl lg:shadow-none',
+        'fixed top-0 left-0 h-full w-64 bg-[#18181b] z-40 transition-transform duration-300 flex flex-col',
         open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100 dark:border-gray-800/50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
-              <BriefcaseBusiness size={20} className="text-white" />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 tracking-tight">TalentFlow</span>
+        <div className="flex items-center gap-3 px-6 h-24 flex-shrink-0">
+          <div className="w-8 h-8 bg-[#ccff00] rounded-tl-xl rounded-br-xl rounded-tr-sm rounded-bl-sm flex items-center justify-center shadow-lg shadow-[#ccff00]/20">
+            <BriefcaseBusiness size={18} className="text-black" />
           </div>
+          <span className="text-2xl font-bold text-white tracking-tight">flux</span>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 lg:hidden transition-colors"
+            className="ml-auto p-2 rounded-xl hover:bg-white/10 text-gray-400 lg:hidden transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide">
-          <div className="mb-4 px-2">
-            <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-              {user?.role === 'recruiter' ? 'Recruiter Menu' : 'Navigation'}
-            </span>
-          </div>
-          <ul className="space-y-1">
-            {navItems.map(item => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  onClick={() => window.innerWidth < 1024 && onClose()}
-                  className={({ isActive }) => cn(
-                    'group flex items-center gap-3.5 px-3 py-3 rounded-2xl text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-blue-600 shadow-md shadow-blue-500/25 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100'
+        <nav className="flex-1 px-4 py-2 overflow-y-auto scrollbar-hide space-y-2">
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => window.innerWidth < 1024 && onClose()}
+              className={({ isActive }) => cn(
+                'group flex items-center gap-4 px-4 py-3.5 rounded-[20px] text-sm font-semibold transition-all duration-200',
+                isActive
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              )}
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    size={20}
+                    className={cn('transition-colors duration-200', isActive ? 'text-black' : 'text-gray-400 group-hover:text-white')}
+                  />
+                  {item.label}
+                  {item.label === 'Dashboard' && (
+                     <span className={cn(
+                       "ml-auto w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                       isActive ? "bg-[#ccff00] text-black" : "bg-gray-800 text-gray-400 group-hover:text-white"
+                     )}>3</span>
                   )}
-                >
-                  {({ isActive }) => (
-                    <>
-                      <item.icon
-                        size={20}
-                        className={cn('transition-colors duration-200', isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400')}
-                      />
-                      {item.label}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+                </>
+              )}
+            </NavLink>
+          ))}
         </nav>
 
-        {/* User Info + Logout */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800/50 m-2 rounded-3xl bg-gray-50 dark:bg-white/5 mb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0 shadow-sm border border-white/10">
-              {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize truncate">{user?.role}</p>
-            </div>
+        {/* Upgrade Card / Logout */}
+        <div className="px-4 pb-6 pt-4 flex flex-col gap-2">
+          <div className="bg-[#ccff00] rounded-[24px] p-5 relative overflow-hidden flex flex-col items-center text-center shadow-lg shadow-[#ccff00]/10">
+             <h4 className="text-black font-bold text-lg leading-tight mb-2">Upgrade to Pro</h4>
+             <p className="text-black/80 text-xs font-medium mb-4">Upgrade your account for a fuller experience.</p>
+             <button className="bg-black text-white w-full py-3 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors">
+               Upgrade Now
+             </button>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 w-full transition-colors"
+            className="flex items-center gap-4 px-4 py-3.5 rounded-[20px] text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-500/10 w-full transition-all mt-2"
           >
-            <LogOut size={16} />
+            <LogOut size={20} />
             Sign Out
           </button>
         </div>

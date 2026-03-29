@@ -12,6 +12,18 @@
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
+  
+  --color-flux-main: #f3f4f6;
+  --color-flux-sidebar: #18181b;
+  --color-flux-lime: #ccff00;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
 }
 
 *, *::before, *::after {
@@ -25,19 +37,17 @@ html {
 
 body {
   margin: 0;
+  padding: 0;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  background-color: var(--color-flux-sidebar); /* Dark background matching sidebar */
 }
 
-/* Dark mode base styles */
+/* Dark mode overrides if someone toggles it, but the app style implies fixed theme styles for the window wrapper */
 .dark body {
-  background-color: #0b0f19;
-  background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                    radial-gradient(at 50% 0%, hsla(225,39%,30%,0.05) 0, transparent 50%), 
-                    radial-gradient(at 100% 0%, hsla(339,49%,30%,0.05) 0, transparent 50%);
-  background-attachment: fixed;
+  background-color: #0a0a0a;
   color: #f9fafb;
 }
 
