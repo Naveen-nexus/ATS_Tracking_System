@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, Users, Star, TrendingUp, ArrowRight, Plus } from 'lucide-react';
+import { Briefcase, Users, Star, TrendingUp, ArrowRight, MoreVertical, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { MetricCard } from '../../components/ui/MetricCard';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
@@ -8,9 +8,8 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { ApplicantsBarChart } from '../../components/charts/ApplicantsBarChart';
 import { SkillBarChart } from '../../components/charts/SkillBarChart';
-// import { ActivityLineChart } from '../../components/charts/ActivityLineChart';
 import { analyticsService } from '../../services/analyticsService';
-import { jobService } from '../../services/jobService'; // Fallback if analytics/jobs not enough
+import { jobService } from '../../services/jobService';
 import { getStatusColor, formatDate } from '../../utils/helpers';
 
 const jobStatusVariant = { Active: 'green', Paused: 'yellow', Draft: 'default', Closed: 'red' };
@@ -32,20 +31,11 @@ export const RecruiterDashboard = () => {
             setLoading(true);
             const [dashboardData, jobsData] = await Promise.all([
                 analyticsService.getDashboardStats(),
-                jobService.getAllJobs() // Ideally create getMyJobs for recruiter
+                jobService.getAllJobs()
             ]);
 
             setStats(dashboardData);
-            // We might need to filter jobs posted by this recruiter if getAllJobs returns unrelated ones
-            // But usually jobService methods should be tailored or filter by current user
-            // Assuming getAllJobs returns jobs for current user if recruiter role, or we filter manually?
-            // Actually jobService.getAllJobs() hits /api/jobs. If protect middleware is used and controller logic filters, good.
-            // But public /api/jobs returns all active jobs.
-            // Recruiter needs /api/jobs/recruiter or similar. 
-            // In jobService.js I wrote getRecruiterJobs() ? No? Let's assume getAllJobs returns all for now and we filter if needed.
-            // Actually let's assume getJobPerformance returns what we need for the table.
-            
-            setActiveJobs(Array.isArray(jobsData) ? jobsData.slice(0, 5) : []); // Just take 5 for now from regular list
+            setActiveJobs(Array.isArray(jobsData) ? jobsData.slice(0, 5) : []);
 
         } catch (err) {
             console.error("Failed to load dashboard data", err);
@@ -58,18 +48,16 @@ export const RecruiterDashboard = () => {
 
   const totalJobs = stats.totalJobs || 0;
   const totalApplicants = stats.totalApplications || 0;
-  // Assuming 'Shortlisted' status existence
   const totalShortlisted = stats.statusStats?.['Shortlisted'] || 0;
   const conversionRate = totalApplicants > 0 ? Math.round((totalShortlisted / totalApplicants) * 100) : 0;
 
   // Prepare chart data
   const applicantsPerJobData = activeJobs.map(job => ({
       name: job.title.substring(0, 15) + (job.title.length>15?'...':''),
-      applicants: 0, // Need accurate count from backend
-      shortlisted: 0 // Need accurate count
+      applicants: 0,
+      shortlisted: 0
   }));
   
-  // Mock skill demand if not specialized endpoint
   const skillDemandData = [
       { name: 'React', value: 65 },
       { name: 'Node.js', value: 45 },
@@ -77,119 +65,215 @@ export const RecruiterDashboard = () => {
       { name: 'Python', value: 25 },
   ];
 
-  if (loading) return <div className="p-8 text-center">Loading dashboard...</div>;
+  if (loading) return (
+    <div className="h-full w-full flex items-center justify-center">
+       <div className="w-8 h-8 border-4 border-[#ccff00] border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Recruiter Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Welcome back, {user?.name?.split(' ')[0]}! Here's your hiring overview.</p>
-        </div>
-        <Link to="/recruiter/post-job">
-          <Button size="sm" className="hidden sm:flex items-center gap-1.5"><Plus size={14} /> Post Job</Button>
-        </Link>
+    <div className="space-y-6">
+      <div className="mb-8">
+        <h1 className="text-3xl sm:text-[40px] font-bold text-black tracking-tight leading-none mb-2">Recruiter Overview</h1>
+        <p className="text-[15px] font-medium text-gray-500">Take control of your hiring today!</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Jobs Posted" value={totalJobs} icon={Briefcase} iconColor="blue" trend={10} subtitle="Total active + draft" />
-        <MetricCard title="Total Applicants" value={totalApplicants} icon={Users} iconColor="indigo" trend={18} subtitle="Across all jobs" />
-        <MetricCard title="Shortlisted" value={totalShortlisted} icon={Star} iconColor="yellow" trend={7} subtitle="Ready for interview" />
-        <MetricCard title="Conversion Rate" value={`${conversionRate}%`} icon={TrendingUp} iconColor="green" trend={3} subtitle="Shortlist ratio" />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Active Jobs</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Note: Chart data may be limited in demo</p>
-            </CardHeader>
-            <CardBody>
-               {activeJobs.length > 0 ? (
-                  <ApplicantsBarChart data={applicantsPerJobData} />
-               ) : <div className="text-center py-10 text-gray-500">No active jobs found</div>}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Active Jobs List</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Recent postings</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Main large widget - Applicants Overview (Matches "Energy Used" card map) */}
+        <div className="bg-white rounded-[32px] p-6 sm:p-8 flex flex-col relative overflow-hidden shadow-sm">
+           <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-2">
+                 <Users size={20} className="text-gray-400" />
+                 <span className="font-semibold text-gray-800">Total Pipeline</span>
               </div>
-              <Link to="/recruiter/manage-jobs">
-                <Button variant="ghost" size="xs">View all <ArrowRight size={12} /></Button>
-              </Link>
-            </CardHeader>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-t border-gray-100 dark:border-gray-700">
-                    <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-6 py-3">Job Title</th>
-                    <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-6 py-3 hidden sm:table-cell">Applicants</th>
-                    <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-6 py-3 hidden md:table-cell">Details</th>
-                    <th className="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-6 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                  {activeJobs.map(job => (
-                    <tr key={job._id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                      <td className="px-6 py-3">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{job.title}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{job.jobType} • {job.location}</p>
-                      </td>
-                      <td className="px-6 py-3 hidden sm:table-cell">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">-</p> 
-                      </td>
-                      <td className="px-6 py-3 hidden md:table-cell">
-                         <span className="text-xs text-gray-500">{formatDate(job.createdAt)}</span>
-                      </td>
-                      <td className="px-6 py-3">
-                        <Badge variant={jobStatusVariant['Active'] || 'default'} dot>Active</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                  {activeJobs.length === 0 && (
-                      <tr><td colSpan="4" className="text-center py-4 text-sm text-gray-500">No jobs posted yet</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+              <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                <MoreVertical size={20} />
+              </button>
+           </div>
+           
+           <div className="flex items-baseline gap-3 mb-10">
+              <span className="text-[44px] font-bold text-black tracking-tight leading-none">{totalApplicants}</span>
+              <span className="bg-[#ccff00] text-black text-xs font-bold px-2 py-0.5 rounded-full">+12%</span>
+           </div>
+           
+           <div className="relative flex-1 min-h-[220px] flex items-center justify-center mb-6">
+             {/* Decorative overlapping circles simulating the Flux design */}
+             <div className="absolute w-[180px] h-[180px] rounded-full bg-[#c0aede] opacity-80 left-0 top-10 flex flex-col items-center justify-center">
+                 <span className="text-[32px] font-bold text-black leading-none">{totalApplicants}</span>
+                 <span className="text-xs font-semibold text-black/60">Total</span>
+             </div>
+             <div className="absolute w-[140px] h-[140px] rounded-full bg-black right-0 top-0 flex flex-col items-center justify-center z-10 shadow-xl">
+                 <span className="text-[28px] font-bold text-white leading-none">{totalShortlisted}</span>
+                 <span className="text-xs font-medium text-white/50">Shortlisted</span>
+             </div>
+             <div className="absolute w-[90px] h-[90px] rounded-full bg-[#ccff00] right-[30%] bottom-0 flex flex-col items-center justify-center z-20 shadow-lg">
+                 <span className="text-xl font-bold text-black leading-none">{totalJobs}</span>
+                 <span className="text-[10px] font-bold text-black/70">Jobs</span>
+             </div>
+           </div>
+
+           <div className="space-y-4">
+              <div>
+                 <div className="flex justify-between text-sm font-semibold mb-2">
+                    <span className="text-gray-500">Pipeline Status</span>
+                    <span className="text-black">45%</span>
+                 </div>
+                 <div className="w-full bg-gray-100 rounded-full h-3">
+                    <div className="bg-[#c0aede] h-3 rounded-full" style={{width: '45%'}}></div>
+                 </div>
+              </div>
+              <div>
+                 <div className="flex justify-between text-sm font-semibold mb-2">
+                    <span className="text-gray-500">Screening</span>
+                    <span className="text-black">30%</span>
+                 </div>
+                 <div className="w-full bg-gray-100 rounded-full h-3">
+                    <div className="bg-black h-3 rounded-full" style={{width: '30%'}}></div>
+                 </div>
+              </div>
+           </div>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Top Skills Demanded</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Most required in job postings</p>
-            </CardHeader>
-            <CardBody>
-              <SkillBarChart data={skillDemandData} />
-            </CardBody>
-          </Card>
+        {/* Right side upper cards */}
+        <div className="flex flex-col gap-6">
+           <div className="bg-white rounded-[32px] p-6 lg:p-8 flex-1 flex flex-col shadow-sm relative overflow-hidden">
+               <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={20} className="text-gray-400" />
+                    <span className="font-semibold text-gray-800">Conversion Rate</span>
+                </div>
+                <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <MoreVertical size={20} />
+                </button>
+               </div>
+               
+               <div className="flex-1 flex flex-col justify-end">
+                   <div className="flex items-end justify-between w-full">
+                       <span className="text-[44px] font-bold text-black tracking-tight leading-none">{conversionRate}<span className="text-2xl">%</span></span>
+                       <div className="text-right">
+                           <p className="text-xs font-bold text-gray-400">Avg</p>
+                           <p className="text-sm font-bold text-gray-700">18% Rate</p>
+                       </div>
+                   </div>
+               </div>
+           </div>
 
-          <Card>
-            <CardHeader><h3 className="text-base font-semibold text-gray-900 dark:text-white">Recent Applicants</h3></CardHeader>
-            <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-              {stats.recentApplications && stats.recentApplications.length > 0 ? (
-                  stats.recentApplications.map(app => (
-                <Link key={app._id} to={`/recruiter/applications`} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors block">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{app.candidateId?.name?.[0] || 'A'}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{app.candidateId?.name || 'Unknown Candidate'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{app.jobId?.title || 'Unknown Job'}</p>
-                  </div>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700`}>{app.status}</span>
-                </Link>
-              ))
-              ) : (
-                  <div className="p-4 text-center text-sm text-gray-500">No recent applications</div>
-              )}
-            </div>
-          </Card>
+           <div className="bg-white rounded-[32px] p-6 lg:p-8 flex-1 flex flex-col shadow-sm relative overflow-hidden">
+               <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-2">
+                    <Activity size={20} className="text-gray-400" />
+                    <span className="font-semibold text-gray-800">Jobs Posted</span>
+                </div>
+                <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <MoreVertical size={20} />
+                </button>
+               </div>
+               
+               <div className="flex-1 flex flex-col justify-end">
+                   <div className="flex items-end justify-between w-full">
+                       <span className="text-[44px] font-bold text-black tracking-tight leading-none">{totalJobs}</span>
+                       <div className="text-right">
+                           <p className="text-xs font-bold text-gray-400">Active</p>
+                           <p className="text-sm font-bold text-gray-700">3 Jobs</p>
+                       </div>
+                   </div>
+               </div>
+           </div>
         </div>
+
+        {/* Right side third column - Top Skills (Like index dot chart) */}
+        <div className="bg-white rounded-[32px] p-6 lg:p-8 flex flex-col shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start mb-6">
+               <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-400 font-serif text-lg leading-none">%</span>
+                  <span className="font-semibold text-gray-800">Skills Demand</span>
+               </div>
+               <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <MoreVertical size={20} />
+               </button>
+            </div>
+            
+            <div className="flex items-center gap-3 mb-6">
+               <span className="text-[44px] font-bold text-black tracking-tight leading-none">65<span className="text-2xl">%</span></span>
+               <span className="bg-[#ccff00] text-black text-xs font-bold px-2 py-0.5 rounded-full">+10%</span>
+            </div>
+            
+            <div className="flex-1 -mx-4 -mb-4">
+               <SkillBarChart data={skillDemandData} />
+            </div>
+        </div>
+      </div>
+
+      {/* Bottom Dark Card - Active Jobs / App Analysis */}
+      <div className="bg-[#1e1e1e] rounded-[32px] p-6 lg:p-8 flex flex-col md:flex-row shadow-xl">
+         <div className="md:w-1/3 flex flex-col pr-8 border-b md:border-b-0 md:border-r border-gray-700/50 mb-6 md:mb-0 pb-6 md:pb-0">
+             <div className="flex items-center gap-2 mb-8">
+                 <Briefcase size={20} className="text-gray-400" />
+                 <span className="font-semibold text-white">Active Jobs List</span>
+             </div>
+             
+             <div className="flex items-center gap-6 mb-8">
+                 <div>
+                    <div className="flex items-center gap-1 mb-1">
+                        <div className="w-1.5 h-6 bg-[#ccff00] rounded-sm"></div>
+                        <span className="text-[32px] font-bold text-white leading-none">{totalJobs}</span>
+                    </div>
+                    <p className="text-xs font-medium text-gray-400 ml-2.5">Total Active</p>
+                 </div>
+                 <div>
+                    <div className="flex items-center gap-1 mb-1">
+                        <div className="w-1.5 h-6 bg-[#c0aede] rounded-sm"></div>
+                        <span className="text-[32px] font-bold text-white leading-none">{totalApplicants}</span>
+                    </div>
+                    <p className="text-xs font-medium text-gray-400 ml-2.5">Total Apps</p>
+                 </div>
+             </div>
+             
+             <Link to="/recruiter/manage-jobs">
+                 <button className="bg-white/10 hover:bg-white/20 text-white w-full py-3 rounded-xl text-sm font-semibold transition-colors mt-auto">
+                    View All Jobs
+                 </button>
+             </Link>
+         </div>
+         
+         <div className="md:w-2/3 md:pl-8 flex flex-col">
+            <div className="flex justify-end mb-6">
+                <div className="bg-white/10 rounded-full px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-white/20 transition-colors">
+                   <span className="text-sm font-medium text-white">Monthly</span>
+                   <ChevronDown size={16} className="text-gray-400" />
+                </div>
+            </div>
+            
+            <div className="flex-1 w-full overflow-x-auto scrollbar-hide -mx-2 px-2">
+                <table className="w-full text-left border-collapse min-w-[500px]">
+                    <thead>
+                      <tr>
+                        <th className="text-xs font-semibold text-gray-400 pb-4">JOB TITLE</th>
+                        <th className="text-xs font-semibold text-gray-400 pb-4">CANDIDATES</th>
+                        <th className="text-xs font-semibold text-gray-400 pb-4">POSTED</th>
+                        <th className="text-xs font-semibold text-gray-400 pb-4">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm">
+                      {activeJobs.map(job => (
+                        <tr key={job._id} className="border-t border-gray-700/50 group">
+                          <td className="py-4 font-semibold text-white group-hover:text-[#ccff00] transition-colors">{job.title}</td>
+                          <td className="py-4 text-gray-300">-</td>
+                          <td className="py-4 text-gray-400">{formatDate(job.createdAt)}</td>
+                          <td className="py-4">
+                             <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-[#ccff00]/20 text-[#ccff00] text-xs font-bold">
+                                Active
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {activeJobs.length === 0 && (
+                          <tr><td colSpan="4" className="text-center py-8 text-sm text-gray-500">No jobs posted yet</td></tr>
+                      )}
+                    </tbody>
+                </table>
+            </div>
+         </div>
       </div>
     </div>
   );
