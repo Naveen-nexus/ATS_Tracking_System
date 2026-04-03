@@ -216,21 +216,21 @@ export const Applicants = () => {
                                 <span className="text-sm font-bold text-gray-400">%</span>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                               <div className={`h-full rounded-full ${c.matchScore >= 80 ? 'bg-green-500' : c.matchScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{width: `${c.matchScore}%`}}></div>
+                               <div className={`h-full rounded-full ${c.matchScore >= 80 ? 'bg-[#ccff00]' : c.matchScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{width: `${c.matchScore}%`}}></div>
                             </div>
                         </div>
                         
                         <div className="flex flex-col justify-end gap-2">
                             <select 
                                value={c.status} 
-                               onChange={(e) => updateStatus(c._id, e.target.value)}
-                               className="w-full appearance-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-800 text-sm font-semibold rounded-xl px-4 py-3 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                               onChange={(e) => updateStatus(c.id, e.target.value)}
+                               className="w-full appearance-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-800 text-sm font-semibold rounded-xl px-4 py-3 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ccff00] focus:border-transparent transition-all cursor-pointer"
                             >
                                {Object.keys(statusVariants).map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                             
-                            <Link to={`/recruiter/analysis/${c._id}`} className="block">
-                               <button className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 py-3 rounded-xl text-sm font-bold transition-colors">
+                            <Link to={`/recruiter/analysis/${c.id}`} className="block">
+                               <button className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black py-3 rounded-xl text-sm font-bold transition-colors">
                                   View Details
                                </button>
                             </Link>
